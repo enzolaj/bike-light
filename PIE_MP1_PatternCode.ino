@@ -38,7 +38,7 @@ void pattern_all_on();
 void pattern_all_flash();
 void pattern_breathing();
 void pattern_bounce();
-void pattern_transistor_dimmer(); // NEW: Forward declaration for the new state
+void pattern_transistor_dimmer(); 
 
 
 
@@ -77,10 +77,6 @@ void toggleButtonPressSwitch(uint8_t switch_pin, STATE_HANDLER_T next_state) {
   static uint32_t last_valid_press = 0;      // the last recorded time of a valid press
   bool current_button = digitalRead(switch_pin);   // get pin number for switch from argument
   uint32_t current_time = millis();              // elapsed time of run time in ms
-
-
-
-
   if (current_button == HIGH && (current_time - last_valid_press) > DEBOUNCE_TIME) {
     last_valid_press = current_time; // update time
     state = next_state;              // update state
@@ -219,13 +215,13 @@ void pattern_breathing() {
 
 void pattern_bounce() {
   // sizeof(LED_PINS) gives total bytes, sizeof(LED_PINS[0]) gives bytes per element
-  // dividing gives the number of elements in the array (e.g., 3 LEDs)
+  // dividing gives the number of elements in the array (e.g., 3 LEDs) (this is a byproduct of C not being similar to python)
   uint8_t NUM_LEDS = sizeof(LED_PINS) / sizeof(LED_PINS[0]);
  
   if (state != prior_state) {   // initial state conditions
     prior_state = state;
     current_led = 0;           // start with first LED (index 0 = RED_LED)
-    bounce_direction = 1;      // +1 means moving forward through array (RED→BLUE→GREEN)
+    bounce_direction = 1;      // +1 means moving forward through array (RED to BLUE to GREEN)
     led_time = millis();
    
     // ensure all LEDs start in the off state
@@ -245,17 +241,17 @@ void pattern_bounce() {
     // boundary checking - prevent array out of bounds and create bounce effect
     if (current_led >= NUM_LEDS - 1) {       // hit the end of array (GREEN LED)
       current_led = NUM_LEDS - 1;            // clamp to last valid index
-      bounce_direction = -1;               // reverse to go backward (GREEN→BLUE→RED)
+      bounce_direction = -1;               // reverse to go backward (GREEN to BLUE to RED)
     } else if (current_led <= 0) {           // hit the beginning of array (RED LED)
       current_led = 0;                       // clamp to first index
-      bounce_direction = 1;                  // reverse to go forward (RED→BLUE→GREEN)
+      bounce_direction = 1;                  // reverse to go forward (RED to BLUE to GREEN)
     }
    
     digitalWrite(LED_PINS[current_led], HIGH); // illuminate the new LED position
     led_time = t;                            // update timing for next bounce interval
   }
  
-  toggleButtonPressSwitch(SW1, pattern_transistor_dimmer); // button press state switch (NEW)
+  toggleButtonPressSwitch(SW1, pattern_transistor_dimmer); // button press state switch
  
   if (state != prior_state) { // conditions when leaving state (clean up)
     // ensure all LEDs are off when exiting this pattern
@@ -283,9 +279,10 @@ void pattern_transistor_dimmer() {
   // state tasks - read the sensor output (from voltage divider circuit) and set LED brightness
   int lightSensorValue = analogRead(LIGHT_SENSOR_PIN);
  
-  // map() converts the light sensor range (0-1023) to an inverted PWM range (255-0); this makes the LEDs brighter with less light and dimmer with more light. We chose a value of light sensor range ending at 700 to make the effect more obvious using the constrain macro.
-  lightSensorValue = constrain(lightSensorValue, 0, 700);
-  int ledBrightness = map(lightSensorValue, 0, 700, 255, 0);
+  // map() converts the light sensor range (0-1023) to an inverted PWM range (255-0); this makes the LEDs brighter with less light and dimmer with more light.
+  // We chose a value of light sensor range ending at 800 and starting at 100 to make the effect more obvious using the constrain macro.
+  lightSensorValue = constrain(lightSensorValue, 100, 800);
+  int ledBrightness = map(lightSensorValue, 100, 800, 255, 0);
  
   // apply the brightness to all LEDs
   analogWrite(RED_LED, ledBrightness);
